@@ -1,0 +1,32 @@
+#cloud-config
+
+hostname: genevapi
+ssh_pwauth: true
+
+users:
+  - name: dries
+    gecos: Dries Verachtert
+    groups: [ wheel ]
+    lock_passwd: false
+    passwd: DRIESPASSWORD
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - SSHPUBLICKEY
+
+chpasswd:
+  expire: False
+  users:
+    - { name: root, password: ROOTPASSWORD }
+    
+
+package_update: true
+package_upgrade: true
+
+runcmd:
+  - systemctl enable sshd
+  - systemctl start sshd
+
+ssh_authorized_keys:
+  - SSHPUBLICKEY
+
+final_message: "User-data config finished"
