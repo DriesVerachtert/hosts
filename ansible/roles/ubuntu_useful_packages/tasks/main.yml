@@ -1,0 +1,20 @@
+---
+# Just a bunch of handy tools that I want to have installed on any ubuntu machine
+- name: Install some packages
+  apt:
+    name:
+      - curl
+      - wget
+      - joe
+      - openvpn
+      - pciutils
+      - usbutils
+      - lsof
+      - lshw
+      - coreutils
+      - findutils
+      - iputils-arping
+      - iputils-ping
+      - iputils-tracepath
+      - python3-kubernetes
+    state: present
