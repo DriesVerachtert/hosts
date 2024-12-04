@@ -1,0 +1,23 @@
+---
+# Just a bunch of handy tools that I want to have installed on any rhel-based machine
+- name: add epel
+  yum:
+    name:
+      - epel-release
+    state: present
+
+- name: Install some packages
+  yum:
+    name:
+      - curl
+      - joe
+      - openvpn
+      - pciutils
+      - usbutils
+      - lsof
+      - lshw
+      - coreutils
+      - findutils
+      - iputils
+      - python3-kubernetes
+    state: present
