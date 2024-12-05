@@ -1,0 +1,70 @@
+---
+# Installs k0s
+# Setup kubectl config for user 'kubectl_user', which in my case is 'dries'
+# Creates a dir /srv/k8s for local storage
+
+- name: 'Check mandatory variables are defined'
+  assert:
+    that:
+      - k0s_version is defined
+      - k0s_arch is defined
+      - k0s_version | length > 0
+      - k0s_arch | length > 0
+      - kubectl_user is defined
+      - kubectl_user | length > 0
+
+- name: Print variables
+  debug:
+    msg: "k0s_version: {{ k0s_version }}, k0s_arch: {{ k0s_arch }}"
+
+- name: Download k0s binary
+  get_url:
+    url: https://github.com/k0sproject/k0s/releases/download/{{ k0s_version | urlencode }}/k0s-{{ k0s_version }}-{{ k0s_arch }}
+    dest: /usr/local/bin/k0s
+    mode: '0755'
+
+- name: Initialize k0s as a controller
+  ansible.builtin.command: /usr/local/bin/k0s install controller --single --enable-worker --no-taints
+  args:
+    creates: /etc/systemd/system/k0scontroller.service
+
+- name: Start and enable k0s service
+  systemd:
+    name: k0scontroller
+    enabled: true
+    state: started
+
+- name: Verify k0s version
+  ansible.builtin.command: /usr/local/bin/k0s version
+  register: k0s_version_output
+
+- name: Show k0s version
+  debug:
+    msg: "k0s version output: {{ k0s_version_output.stdout_lines }}"
+
+- name: Verify k0s status
+  ansible.builtin.command: /usr/local/bin/k0s status
+  register: k0s_status_output
+
+- name: Show k0s version
+  debug:
+    msg: "k0s status output: {{ k0s_status_output.stdout_lines }}"
+
+- name: Ensure kube config dir exists
+  file:
+    path: /home/{{ kubectl_user }}/.kube
+    owner: "{{ kubectl_user }}"
+    state: directory
+    mode: '0750'
+
+- name: Setup kube admin access config
+  command: /usr/local/bin/k0s kubeconfig admin > /home/{{ kubectl_user }}/.kube/config
+  args:
+    creates: /home/{{ kubectl_user }}/.kube/config
+
+- name: dir for k8s local storage
+  file:
+    path: /srv/k8s
+    owner: root
+    state: directory
+    mode: '0755'
