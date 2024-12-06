@@ -1,0 +1,12 @@
+---
+- hosts: carolus
+  roles:
+    - ubuntu_useful_packages
+    - k0s
+
+- hosts: pigeneva
+  roles:
+    - selinux
+    - almalinux_useful_packages
+    - raspberrypi4_fix_cgroup
+    - k0s
