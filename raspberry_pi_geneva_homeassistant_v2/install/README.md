@@ -10,5 +10,8 @@ cat user-data-template.txt | sed "s|DRIESPASSWORD|${DRIESPASSWORD}|g; s|SSHPUBLI
 cp user-data network-config /Volumes/CIDATA/
 ```
 
+Afterwards add to /boot/cmdline.txt: cgroup_memory=1 cgroup_enable=memory selinux=0
+
+
 cloud-init schema --system
 alma
