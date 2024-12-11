@@ -54,11 +54,12 @@
   file:
     path: /home/{{ kubectl_user }}/.kube
     owner: "{{ kubectl_user }}"
+    group: "{{ kubectl_user }}"
     state: directory
     mode: '0750'
 
 - name: Setup kube admin access config
-  command: /usr/local/bin/k0s kubeconfig admin > /home/{{ kubectl_user }}/.kube/config
+  ansible.builtin.shell: "/usr/local/bin/k0s kubeconfig admin > /home/{{ kubectl_user }}/.kube/config"
   args:
     creates: /home/{{ kubectl_user }}/.kube/config
 
@@ -68,3 +69,24 @@
     owner: root
     state: directory
     mode: '0755'
+
+- name: Install kubernetes python package
+  # very scary but I need it to run some k8s commands from ansible
+  ansible.builtin.pip:
+    name: kubernetes
+    break_system_packages: true
+
+- name: Deploy nginx ingress namespace
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'deploy-nginx-ingress-1-namespace.yaml') }}"
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+
+- name: Check if the nginx ingress namespace was created in k0s
+  kubernetes.core.k8s_info:
+    kind: Namespace
+    name: ingress-nginx
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+  register: ingress_nginx_namespace
+  until: "'ingress-nginx' in ingress_nginx_namespace.resources | map(attribute='metadata.name') | list"
+  retries: 1

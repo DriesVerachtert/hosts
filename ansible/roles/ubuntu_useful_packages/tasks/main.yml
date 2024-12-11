@@ -16,5 +16,5 @@
       - iputils-arping
       - iputils-ping
       - iputils-tracepath
-      - python3-kubernetes
+      - python3-pip
     state: present

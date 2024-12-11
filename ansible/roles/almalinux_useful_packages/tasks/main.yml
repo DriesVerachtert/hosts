@@ -19,5 +19,5 @@
       - coreutils
       - findutils
       - iputils
-      - python3-kubernetes
+      - python3-pip
     state: present
