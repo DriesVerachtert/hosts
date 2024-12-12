@@ -90,3 +90,33 @@
   register: ingress_nginx_namespace
   until: "'ingress-nginx' in ingress_nginx_namespace.resources | map(attribute='metadata.name') | list"
   retries: 1
+
+- name: Deploy nginx ingress RBAC
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'deploy-nginx-ingress-2-rbac.yaml') }}"
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+
+- name: Check if the nginx ingress roles and bindings were created in k0s
+  kubernetes.core.k8s_info:
+    kind: ClusterRoleBinding
+    name: ingress-nginx-admission
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+  register: ingress_nginx_admission_crb
+  until: "'ingress-nginx-admission' in ingress_nginx_admission_crb.resources | map(attribute='metadata.name') | list"
+  retries: 1
+
+- name: Deploy nginx ingress configmap
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'deploy-nginx-ingress-3-configmap.yaml') }}"
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+
+- name: Check if the nginx ingress config map was created in k0s
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: ingress-nginx-controller
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+  register: ingress_nginx_configmap
+  until: "'ingress-nginx-controller' in ingress_nginx_configmap.resources | map(attribute='metadata.name') | list"
+  retries: 1
