@@ -116,7 +116,51 @@
   kubernetes.core.k8s_info:
     kind: ConfigMap
     name: ingress-nginx-controller
+    namespace: ingress-nginx
     kubeconfig: /home/{{ kubectl_user }}/.kube/config
   register: ingress_nginx_configmap
   until: "'ingress-nginx-controller' in ingress_nginx_configmap.resources | map(attribute='metadata.name') | list"
   retries: 1
+
+- name: Deploy nginx ingress services
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'deploy-nginx-ingress-4-services.yaml') }}"
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+
+- name: Deploy nginx ingress deployment
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'deploy-nginx-ingress-5-deployment.yaml') }}"
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+
+- name: Check if the nginx ingress controller pod was created in k0s
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: ingress-nginx
+    label_selectors:
+      - app.kubernetes.io/component = controller
+      - app.kubernetes.io/name = ingress-nginx
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+  register: ingress_nginx_controller_pod
+  # fails if no pod found
+  until: "'ingress-nginx' in ingress_nginx_controller_pod.resources | map(attribute='metadata.namespace') | list"
+  retries: 1
+
+- name: Deploy nginx ingress jobs
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'deploy-nginx-ingress-6-jobs.yaml') }}"
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+
+- name: Deploy nginx ingress ingressclass
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'deploy-nginx-ingress-7-ingressclass.yaml') }}"
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+
+- name: Deploy nginx ingress webhook
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', 'deploy-nginx-ingress-8-webhook.yaml') }}"
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
