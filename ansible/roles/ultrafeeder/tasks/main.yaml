@@ -1,0 +1,36 @@
+---
+# Kubernetes deployment of Ultrafeeder, which can collect ADS-B data (positions of planes) with receivers like
+# rtl-sdr dongles and display the collected data on a map and forward the data to a bunch of aggregators.
+# For more info, see:
+# https://sdr-enthusiasts.gitbook.io/ads-b/foundations/deploy-ultrafeeder-container
+# https://github.com/sdr-enthusiasts/docker-adsb-ultrafeeder
+
+- name: 'Check mandatory variables are defined'
+  assert:
+    that:
+      - ultrafeeder_lat is defined
+      - ultrafeeder_lat | length > 0
+      - ultrafeeder_long is defined
+      - ultrafeeder_long | length > 0
+      - ultrafeeder_tz is defined
+      - ultrafeeder_tz | length > 0
+      - ultrafeeder_alt is defined
+      - ultrafeeder_alt | length > 0
+
+- name: Deploy ultrafeeder
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'ultrafeeder.yaml.j2') }}"
+    kubeconfig: /home/dries/.kube/config
+
+- name: Check if the ultrafeeder pod was created in k0s
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: ultrafeeder
+    label_selectors:
+      - app = ultrafeeder
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+  register: ultrafeeder_pod
+  # fails if no pod found
+  until: "'ultrafeeder' in ultrafeeder_pod.resources | map(attribute='metadata.namespace') | list"
+  retries: 1

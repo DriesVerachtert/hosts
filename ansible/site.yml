@@ -11,4 +11,6 @@
     - raspberrypi4_fix_cgroup
     - k0s
     - rtlsdr_blacklists
+    - ultrafeeder
+
 

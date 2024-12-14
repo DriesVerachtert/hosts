@@ -1,0 +1,107 @@
+# Kubernetes deployment of Ultrafeeder, which can collect ADS-B data (positions of planes) with receivers like
+# rtl-sdr dongles and display the collected data on a map and forward the data to a bunch of aggregators.
+# For more info, see:
+# https://sdr-enthusiasts.gitbook.io/ads-b/foundations/deploy-ultrafeeder-container
+# https://github.com/sdr-enthusiasts/docker-adsb-ultrafeeder
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ultrafeeder
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ultrafeeder
+  namespace: ultrafeeder
+  labels:
+    app: ultrafeeder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ultrafeeder
+  template:
+    metadata:
+      labels:
+        app: ultrafeeder
+    spec:
+      volumes:
+        - name: usb
+          hostPath:
+            path: /dev/bus/usb
+            type: Directory
+      containers:
+        - name: ultrafeeder
+          image: ghcr.io/sdr-enthusiasts/docker-adsb-ultrafeeder
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: usb
+              mountPath: /dev/bus/usb
+              readOnly: false
+          env:
+            - name: LAT
+              value: "{{ ultrafeeder_lat }}"
+            - name: LONG
+              value: "{{ ultrafeeder_long }}"
+            - name: TZ
+              value: "{{ ultrafeeder_tz }}"
+            - name: ALT
+              value: "{{ ultrafeeder_alt }}"
+            - name: TAR1090_SITESHOW
+              value: "true"
+            - name: READSB_DEVICE_TYPE
+              value: "rtlsdr"
+          ports:
+            - name: raw-in
+              containerPort: 30001
+            - name: raw-out
+              containerPort: 30002
+            - name: sbs-basest-out
+              containerPort: 30003
+            - name: sbs-basest-in
+              containerPort: 32006
+            - name: beast-in-1
+              containerPort: 30004
+            - name: beast-in-2
+              containerPort: 30104
+            - name: beast-out
+              containerPort: 30005
+            - name: beast-red-out
+              containerPort: 30006
+            - name: json-pos-out
+              containerPort: 30047
+            - name: mlat-sbs-out
+              containerPort: 31003
+            - name: mlat-beast-in
+              containerPort: 31004
+            - name: mlat-beast-out
+              containerPort: 31005
+            - name: mlat-b-r-out
+              containerPort: 31006
+            - name: prom-telegraf
+              containerPort: 9273
+            - name: prom-readsb
+              containerPort: 9274
+            - name: tar1090-map-web
+              containerPort: 80
+---
+# In case you have some little test cluster without an ingress and just want to make
+# the tar1090 map interface accessible on port 80:
+#
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: tar1090-map-web-interface
+#  namespace: ultrafeeder
+#  labels:
+#    app: ultrafeeder
+#spec:
+#  type: NodePort
+#  ports:
+#    - port: 80
+#      targetPort: 80
+#      nodePort: 30007
+#  selector:
+#    app: ultrafeeder
