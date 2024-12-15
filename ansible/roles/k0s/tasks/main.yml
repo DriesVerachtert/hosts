@@ -2,16 +2,21 @@
 # Installs k0s
 # Setup kubectl config for user 'kubectl_user', which in my case is 'dries'
 # Creates a dir /srv/k8s for local storage
+# Adds nginx-ingress, with a default backend
 
 - name: 'Check mandatory variables are defined'
   assert:
     that:
       - k0s_version is defined
-      - k0s_arch is defined
       - k0s_version | length > 0
+      - k0s_arch is defined
       - k0s_arch | length > 0
       - kubectl_user is defined
       - kubectl_user | length > 0
+      - server_fqdn is defined
+      - server_fqdn | length > 0
+      - nginx_ingress_default_backend_image is defined # nginx:stable-alpine
+      - nginx_ingress_default_backend_image | length > 0
 
 - name: Print variables
   debug:
@@ -91,6 +96,12 @@
   until: "'ingress-nginx' in ingress_nginx_namespace.resources | map(attribute='metadata.name') | list"
   retries: 1
 
+- name: Deploy default backend
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'default-backend.yaml.j2') }}"
+    kubeconfig: /home/{{ kubectl_user }}/.kube/config
+
 - name: Deploy nginx ingress RBAC
   kubernetes.core.k8s:
     state: present
@@ -131,7 +142,7 @@
 - name: Deploy nginx ingress deployment
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('file', 'deploy-nginx-ingress-5-deployment.yaml') }}"
+    definition: "{{ lookup('file', 'deploy-nginx-ingress-5-daemonsets.yaml') }}"
     kubeconfig: /home/{{ kubectl_user }}/.kube/config
 
 - name: Check if the nginx ingress controller pod was created in k0s
@@ -164,3 +175,5 @@
     state: present
     definition: "{{ lookup('file', 'deploy-nginx-ingress-8-webhook.yaml') }}"
     kubeconfig: /home/{{ kubectl_user }}/.kube/config
+
+
