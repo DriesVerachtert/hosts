@@ -1,0 +1,14 @@
+---
+# used only on small k0s install on raspberry pi: just for small internal
+# tests where security isn't that important
+
+- name: Ensure SELinux is disabled temporarily
+  ansible.builtin.command: setenforce 0
+  when: ansible_selinux.status == "enabled"
+
+- name: Update SELinux configuration to disabled permanently
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: 'SELINUX=disabled'
+    state: present
