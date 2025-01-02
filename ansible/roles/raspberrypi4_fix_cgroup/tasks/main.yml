@@ -1,0 +1,29 @@
+---
+# k0s didn't work out of the box on raspberry pi 4 with almalinux 9:
+# memory cgroup had to be enabled
+
+
+- name: Get /boot/cmdline.txt
+  ansible.builtin.command: cat /boot/cmdline.txt
+  register: boot_cmdline_output
+
+- name: Show /boot/cmdline.txt
+  debug:
+    msg: "/boot/cmdline.txt: {{ boot_cmdline_output.stdout_lines }}"
+
+- name: Check cgroup and selinux boot params
+  lineinfile: 
+    dest: /boot/cmdline.txt
+    regexp: '^(.*)cgroup_memory=1 cgroup_enable=memory selinux=0(.*)$'
+  check_mode: yes
+  register: presence
+  failed_when: presence.changed
+
+# todo fix
+#    - name: Check if cgroup memory already enabled and selinux disabled
+#      lineinfile:
+#        path: /boot/cmdline.txt
+#        regexp: '^(cgroup_memory=1 cgroup_enable=memory selinux=0 )?(.*)$'
+#        line: 'cgroup_memory=1 cgroup_enable=memory selinux=0 \2'
+#        backrefs: yes
+#      notify: "reboot needed"
